@@ -12,33 +12,53 @@ var connection = mysql.createConnection({
 
   // Your password
   password: "",
-  database: "bamazon_DB",
+  database: "bamazonDB",
 });
 
 // connect to the mysql server and sql database
 connection.connect(function(err) {
   if (err) throw err;
-  // debug: true
   console.log("connected as id " + connection.threadId + "\n");
   // run the start function after the connection is made to prompt the user
   inventory();
 });
+
+function startBuying() {
+    // ask user if they want to buy a product
+  inquirer
+    .prompt([{
+      type: "confirm",
+      name: "continue",
+      message: "Would you like to try again?",
+    }])
+// if yes, then show table
+  .then(function(userPurchase) {
+        if(userPurchase.continue) {
+        inventory();       
+      } else {
+  // if no, then goodbye
+  console.log("Thanks for shopping. Have a great day.")
+    }
+  });
+}
+
+
+
 // --------------------List Inventory--------------------------
-
-
 // instantiate 
 function inventory() {
 var table = new Table({
     head: ['Item #', 'Product', 'Department', 'Price', 'Stock Quantity']
-  , colWidths: [10, 30, 30, 10, 20]
- listInventory();
+  , colWidths: [20, 30, 20, 10, 10]
+
 });
+listInventory(table);
+}
 
 
+function listInventory(table){
 
-function listInventory(){
-
-conection.query("SELECT * FROM Products", function(err, res) {
+connection.query("SELECT * FROM Products", function(err, res) {
   for(var i = 0; i < res.length; i ++) {
 
     var itemId = res[i].Item_Id,
@@ -50,41 +70,45 @@ conection.query("SELECT * FROM Products", function(err, res) {
 // table is an Array, so you can `push`, `unshift`, `splice` and friends 
 
     table.push(
-      [itemID, productName, departmentName, price, stockQuantity]
+      [itemId, productName, departmentName, price, stockQuantity]
   );
   }
       console.log("");
-      console.log("--------------CURRENT BAMAZON INVENTORY-----------------------");
+      console.log("----------------------------------CURRENT BAMAZON INVENTORY-------------------------------");
       console.log("");
       console.log(table.toString());
       console.log("");
       selectPrompt();
     });
   }
-}
+
 
 // function which prompts the user for what action they should take
 function selectPrompt() {
   inquirer
-    .prompt({
-      type: "confirm",
+    .prompt([{
+      type: "input",
       name: "continue",
-      message: "Please enter the ID of the item you would like to buy",
+      message: "Please enter the ID of the item you would like to purchase",
     },
     {
       type: "input",
       name: "inputNumber",
-      message: "How many would you like to buy?"
-    })
+      message: "How many would you like to purchase?"
+    }])
 
-    .then(function(answer) {
-      connection.query("SELECT * FROM Products WHERE Item_Id = ?", userPurchase.inputId, function(err, res) {
-      for(var i = 0; i < res.length; i++) {
+    .then(function(userPurchase) {
+      connection.query("SELECT * FROM Products WHERE Item_Id = ?", userPurchase.continue, function(err, res) {
+      for(var i = 0; i < res.length; i++ && res.length != 0) {
         
       if(userPurchase.inputNumber > res[i].Stock_Qty) {
-       console.log("Sorry! Not enough in stock. Please try again later.");
-       listInventory();
+       console.log("Sorry! Not enough in stock. Please try again.");
+       startBuying();
         }
+      // if(Item_Id === 0) {
+      //   console.log("This is not a valid item number. Please select an Item number from the list.")
+      //   startBuying();
+      //     }
       else {
         console.log("===================================");
         console.log("Great! This item is in stock.");
@@ -92,15 +116,15 @@ function selectPrompt() {
         console.log("You've selected:");
         console.log("----------------");
         console.log("Item: " + res[i].Product_Name);
-        console.log("Department: " + res[i].Department_Name);
-        console.log("Price: " + res[i].price);
+        // console.log("Department: " + res[i].Department_Name);
+        console.log("Price: " + res[i].Price);
         console.log("Quantity: " + userPurchase.inputNumber);
         console.log("----------------");
         console.log("Total: " + res[i].Price * userPurchase.inputNumber);
         console.log("===================================");
   
     var newStock = (res[i].Stock_Qty - userPurchase.inputNumber);
-                    var purchaseId = (userPurchase.inputId);
+                    var purchaseId = (userPurchase.continue);
                     //console.log(newStock);
                     confirmPrompt(newStock, purchaseId);
                 }
@@ -121,8 +145,10 @@ function confirmPrompt(newStock, purchaseId) {
 
     }]).then(function(userConfirm) {
         if (userConfirm.confirmPurchase === true) {
+          // console.log("this is true");
+          // console.log(newStock, purchaseId)
 
-            //if user confirms purchase, update mysql database with new stock quantity by subtracting user quantity purchased.
+//if user confirms purchase, update mysql database with new stock quantity by subtracting user quantity purchased.
 
             connection.query("UPDATE products SET ? WHERE ?", [{
                 Stock_Qty: newStock
@@ -134,12 +160,12 @@ function confirmPrompt(newStock, purchaseId) {
             console.log("=================================");
             console.log("Transaction completed. Thank you.");
             console.log("=================================");
-            inventory();
+            startBuying();
         } else {
             console.log("=================================");
             console.log("No worries. Maybe next time!");
             console.log("=================================");
-            inventory();
+            startBuying();
         }
     });
 }
