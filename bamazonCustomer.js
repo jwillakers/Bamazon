@@ -11,7 +11,7 @@ var connection = mysql.createConnection({
   user: "root",
 
   // Your password
-  password: "",
+  password: "graphics07",
   database: "bamazonDB",
 });
 
@@ -20,7 +20,7 @@ connection.connect(function(err) {
   if (err) throw err;
   console.log("connected as id " + connection.threadId + "\n");
   // run the start function after the connection is made to prompt the user
-  inventory();
+  startBuying();
 });
 
 function startBuying() {
@@ -29,7 +29,7 @@ function startBuying() {
     .prompt([{
       type: "confirm",
       name: "continue",
-      message: "Would you like to try again?",
+      message: "Welcome to Bamazon. Would you like to see our products?",
     }])
 // if yes, then show table
   .then(function(userPurchase) {
@@ -37,7 +37,7 @@ function startBuying() {
         inventory();       
       } else {
   // if no, then goodbye
-  console.log("Thanks for shopping. Have a great day.")
+  console.log("Thank you. Have a great day.")
     }
   });
 }
